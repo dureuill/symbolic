@@ -776,14 +776,9 @@ impl<'d, 'a> DwarfUnit<'d, 'a> {
                 continue;
             }
 
-            // We have a non-inlined function which has two ranges or more, probably split because
-            // of cold paths.
-            if !inline && range_buf.len() != 1 {
-                // TODO: Emit one function record per range, instead of skipping this function. This
-                // also applies to PDB, where this is more common with LTO enabled.
-                skipped_depth = Some(depth);
-                continue;
-            }
+            // Sort the ranges, as they are not necessarily ordered in DWARF, which would mess
+            // with our range calculations below, leading to underflows.
+            range_buf.sort_by_key(|r| r.begin);
 
             let function_address = offset(range_buf[0].begin, self.inner.info.address_offset);
             let function_size = range_buf[range_buf.len() - 1].end - range_buf[0].begin;
